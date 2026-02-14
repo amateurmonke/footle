@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Footle</title>
+  <!-- Chart.js for radar chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & Variables ──────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #0e0e0e;
+      --surface:   #1a1a1a;
+      --surface2:  #242424;
+      --border:    #333;
+      --text:      #e0e0e0;
+      --text-dim:  #888;
+      --green:     #22c55e;
+      --yellow:    #eab308;
+      --red:       #ef4444;
+      --accent:    #3b82f6;
+      --radius:    8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────── */
+    header {
+      width: 100%;
+      max-width: 720px;
+      text-align: center;
+      padding: 28px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+    header p { color: var(--text-dim); font-size: 0.85rem; margin-top: 4px; }
+
+    /* ── Mode Switcher ─────────────────────────────────────────────── */
+    .mode-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .mode-bar button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 20px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .mode-bar button:hover { background: var(--surface2); }
+    .mode-bar button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Search Box ────────────────────────────────────────────────── */
+    .search-area {
+      width: 100%;
+      max-width: 480px;
+      margin: 24px auto 0;
+      position: relative;
+      padding: 0 16px;
+    }
+    .search-area input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-area input:focus { border-color: var(--accent); }
+    .search-area input::placeholder { color: var(--text-dim); }
+
+    /* ── Autocomplete Dropdown ─────────────────────────────────────── */
+    .autocomplete {
+      position: absolute;
+      top: 100%;
+      left: 16px;
+      right: 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 0 0 var(--radius) var(--radius);
+      max-height: 320px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+    }
+    .autocomplete.open { display: block; }
+    .ac-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .ac-item:hover, .ac-item.selected { background: var(--surface); }
+    .ac-item img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--surface);
+    }
+    .ac-item .ac-name { font-weight: 600; font-size: 0.9rem; }
+    .ac-item .ac-club { font-size: 0.75rem; color: var(--text-dim); }
+
+    /* ── Guess Counter ─────────────────────────────────────────────── */
+    .guess-counter {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    /* ── Guess History Table ───────────────────────────────────────── */
+    .history {
+      width: 100%;
+      max-width: 720px;
+      margin: 20px auto 0;
+      padding: 0 16px;
+    }
+    .history-header, .history-row {
+      display: grid;
+      grid-template-columns: 40px 1.2fr 1fr 1fr 0.9fr 0.8fr 0.6fr 0.6fr;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .history-header > div {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      padding: 6px 8px;
+      text-align: center;
+    }
+    .history-row > div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 8px;
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      animation: pop-in 0.3s ease-out;
+      min-height: 44px;
+      line-height: 1.2;
+    }
+    @keyframes pop-in {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .cell-correct { background: var(--green); color: #000; }
+    .cell-close   { background: var(--yellow); color: #000; }
+    .cell-wrong   { background: var(--red); color: #fff; }
+    .cell-neutral { background: var(--surface2); color: var(--text); }
+
+    .cell-player {
+      background: var(--surface2);
+      justify-content: flex-start !important;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .cell-player img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .cell-player span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .direction-arrow {
+      font-size: 0.75rem;
+      margin-left: 4px;
+      font-weight: 400;
+    }
+
+    /* ── Game Over Banner ──────────────────────────────────────────── */
+    .game-over-banner {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 28px;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      max-width: 480px;
+      width: calc(100% - 32px);
+      animation: pop-in 0.35s ease-out;
+    }
+    .game-over-banner.visible { display: flex; }
+    .game-over-banner h2 { font-size: 1.3rem; }
+    .game-over-banner .target-reveal {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .target-reveal img {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--surface2);
+    }
+    .target-reveal .reveal-info { text-align: left; }
+    .target-reveal .reveal-name { font-size: 1.1rem; font-weight: 700; }
+    .target-reveal .reveal-meta { font-size: 0.8rem; color: var(--text-dim); }
+
+    .game-over-banner .stats-line {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .play-again-btn {
+      margin-top: 8px;
+      padding: 10px 28px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .play-again-btn:hover { opacity: 0.85; }
+
+    /* ── Radar Chart ───────────────────────────────────────────────── */
+    .radar-section {
+      display: none;
+      margin-top: 24px;
+      padding: 0 16px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .radar-section.visible { display: block; }
+    .radar-section h3 {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .radar-section canvas {
+      max-height: 300px;
+    }
+
+    /* ── Footer ────────────────────────────────────────────────────── */
+    footer {
+      margin-top: auto;
+      padding: 24px 16px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Confetti animation ────────────────────────────────────────── */
+    .confetti-container {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      top: -20px;
+      animation: confetti-fall 2.5s ease-in forwards;
+    }
+    @keyframes confetti-fall {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── Win banner glow ───────────────────────────────────────────── */
+    .game-over-banner.won {
+      border-color: var(--green);
+      box-shadow: 0 0 30px rgba(34, 197, 94, 0.15);
+    }
+    .game-over-banner.won h2 {
+      color: var(--green);
+    }
+    .congrats-msg {
+      font-size: 0.9rem;
+      color: var(--text);
+      text-align: center;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <header>
+    <h1>Footle</h1>
+    <p>Guess the footballer, Wordle style!</p>
+  </header>
+
+  <!-- ── Mode Switcher ───────────────────────────────────────────── -->
+  <div class="mode-bar">
+    <button id="btn-daily" class="active" onclick="startGame('daily')">Daily</button>
+    <button id="btn-random" onclick="startGame('random')">Random</button>
+  </div>
+
+  <!-- ── Search Input ────────────────────────────────────────────── -->
+  <div class="search-area">
+    <input
+      type="text"
+      id="search-input"
+      placeholder="Type a player name…"
+      autocomplete="off"
+      disabled
+    />
+    <div class="autocomplete" id="ac-dropdown"></div>
+  </div>
+
+  <!-- ── Guess Counter ───────────────────────────────────────────── -->
+  <div class="guess-counter" id="guess-counter"></div>
+
+  <!-- ── Guess History ───────────────────────────────────────────── -->
+  <div class="history" id="history">
+    <div class="history-header">
+      <div></div>
+      <div>Player</div>
+      <div>Nation</div>
+      <div>Club</div>
+      <div>League</div>
+      <div>Position</div>
+      <div>Age</div>
+      <div>OVR</div>
+    </div>
+  </div>
+
+  <!-- ── Radar Chart (shown after each guess) ────────────────────── -->
+  <div class="radar-section" id="radar-section">
+    <h3>Last Guess vs Target</h3>
+    <canvas id="radar-chart"></canvas>
+  </div>
+
+  <!-- ── Game Over Banner ────────────────────────────────────────── -->
+  <div class="game-over-banner" id="game-over-banner">
+    <h2 id="go-title"></h2>
+    <div class="target-reveal" id="go-reveal"></div>
+    <div class="stats-line" id="go-stats"></div>
+    <button class="play-again-btn" onclick="startGame(currentMode)">Play Again</button>
+  </div>
+
+  <footer>I got bored in a lecture and made this &amp; ❤️</footer>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <script>
+    // ── State ──────────────────────────────────────────────────────
+    let currentMode = "daily";
+    let guessCount = 0;
+    let maxGuesses = 8;
+    let gameOver = false;
+    let acIndex = -1;            // highlighted autocomplete index
+    let radarChart = null;       // Chart.js instance
+
+    // ── Start / restart game ───────────────────────────────────────
+    async function startGame(mode) {
+      currentMode = mode;
+      guessCount = 0;
+      gameOver = false;
+      acIndex = -1;
+
+      // UI resets
+      document.getElementById("history").innerHTML = `
+        <div class="history-header">
+          <div></div><div>Player</div><div>Nation</div><div>Club</div><div>League</div>
+          <div>Position</div><div>Age</div><div>OVR</div>
+        </div>`;
+      document.getElementById("game-over-banner").classList.remove("visible");
+      document.getElementById("radar-section").classList.remove("visible");
+      if (radarChart) { radarChart.destroy(); radarChart = null; }
+      document.getElementById("search-input").value = "";
+      document.getElementById("search-input").disabled = true;
+
+      document.querySelectorAll(".mode-bar button").forEach(b => b.classList.remove("active"));
+      document.getElementById(mode === "daily" ? "btn-daily" : "btn-random").classList.add("active");
+
+      const res = await fetch("/api/new_game", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      const data = await res.json();
+      maxGuesses = data.max_guesses || 8;
+      updateCounter();
+
+      document.getElementById("search-input").disabled = false;
+      document.getElementById("search-input").focus();
+    }
+
+    function updateCounter() {
+      document.getElementById("guess-counter").textContent =
+        `Guess ${guessCount} / ${maxGuesses}`;
+    }
+
+    // ── Autocomplete ───────────────────────────────────────────────
+    const searchInput = document.getElementById("search-input");
+    const acDropdown  = document.getElementById("ac-dropdown");
+    let debounceTimer = null;
+
+    searchInput.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      const q = searchInput.value.trim();
+      if (q.length < 2) { closeAC(); return; }
+      debounceTimer = setTimeout(() => fetchAC(q), 180);
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      const items = acDropdown.querySelectorAll(".ac-item");
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        acIndex = Math.min(acIndex + 1, items.length - 1);
+        highlightAC(items);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        acIndex = Math.max(acIndex - 1, 0);
+        highlightAC(items);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (acIndex >= 0 && items[acIndex]) items[acIndex].click();
+      } else if (e.key === "Escape") {
+        closeAC();
+      }
+    });
+
+    async function fetchAC(q) {
+      const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(q)}`);
+      const players = await res.json();
+      acDropdown.innerHTML = "";
+      acIndex = -1;
+      if (!players.length) { closeAC(); return; }
+      players.forEach((p, i) => {
+        const div = document.createElement("div");
+        div.className = "ac-item";
+        div.innerHTML = `
+          <img src="${p.player_face_url || ''}" alt="" loading="lazy" onerror="this.style.display='none'"/>
+          <div>
+            <div class="ac-name">${p.short_name}</div>
+            <div class="ac-club">${p.club_name}</div>
+          </div>`;
+        div.addEventListener("click", () => submitGuess(p.player_id));
+        acDropdown.appendChild(div);
+      });
+      acDropdown.classList.add("open");
+    }
+
+    function highlightAC(items) {
+      items.forEach((el, i) => el.classList.toggle("selected", i === acIndex));
+    }
+
+    function closeAC() {
+      acDropdown.classList.remove("open");
+      acDropdown.innerHTML = "";
+      acIndex = -1;
+    }
+
+    // Close autocomplete when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".search-area")) closeAC();
+    });
+
+    // ── Submit Guess ───────────────────────────────────────────────
+    async function submitGuess(playerId) {
+      if (gameOver) return;
+      closeAC();
+      searchInput.value = "";
+
+      const res = await fetch("/api/guess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player_id: playerId }),
+      });
+      const data = await res.json();
+
+      if (data.error && !data.feedback) {
+        // e.g. duplicate guess
+        showToast(data.error);
+        return;
+      }
+
+      guessCount = data.guess_number;
+      updateCounter();
+
+      // Render the history row
+      renderRow(data.feedback);
+
+      // Update radar chart
+      updateRadar(data.feedback);
+
+      // Check game over
+      if (data.game_over) {
+        gameOver = true;
+        searchInput.disabled = true;
+        showGameOver(data.won, data.target, data.guess_number);
+      }
+    }
+
+    // ── Render a guess row ─────────────────────────────────────────
+    function renderRow(fb) {
+      const hist = document.getElementById("history");
+      const row = document.createElement("div");
+      row.className = "history-row";
+
+      // # (row number)
+      const numCell = document.createElement("div");
+      numCell.className = "cell-neutral";
+      numCell.textContent = guessCount;
+      row.appendChild(numCell);
+
+      // Player (face + name)
+      const playerCell = document.createElement("div");
+      playerCell.className = "cell-player";
+      playerCell.innerHTML = `
+        <img src="${fb.guess_face_url || ''}" alt="" onerror="this.style.display='none'"/>
+        <span>${fb.guess_name}</span>`;
+      row.appendChild(playerCell);
+
+      // Nationality
+      row.appendChild(makeCell(fb.nationality.value, fb.nationality.status));
+      // Club
+      row.appendChild(makeCell(fb.club.value, fb.club.status));
+      // League
+      row.appendChild(makeCell(fb.league.value, fb.league.status));
+      // Position
+      row.appendChild(makeCell(fb.position.value, fb.position.status));
+      // Age
+      row.appendChild(makeCell(
+        fb.age.value + dirArrow(fb.age.direction),
+        fb.age.status
+      ));
+      // Overall
+      row.appendChild(makeCell(
+        fb.overall.value + dirArrow(fb.overall.direction),
+        fb.overall.status
+      ));
+
+      hist.appendChild(row);
+    }
+
+    function makeCell(text, status) {
+      const div = document.createElement("div");
+      const cls = status === "correct" ? "cell-correct"
+                : status === "close"   ? "cell-close"
+                :                        "cell-wrong";
+      div.className = cls;
+      div.innerHTML = text;
+      return div;
+    }
+
+    function dirArrow(dir) {
+      if (dir === "higher") return ' <span class="direction-arrow">↑</span>';
+      if (dir === "lower")  return ' <span class="direction-arrow">↓</span>';
+      return "";
+    }
+
+    // ── Game Over ──────────────────────────────────────────────────
+    const WIN_MESSAGES = [
+      "Absolute worldie! 🌍",
+      "VAR confirms: you're a genius!",
+      "Clean sheet mentality! 💪"
+    ];
+
+    function showGameOver(won, target, numGuesses) {
+      const banner = document.getElementById("game-over-banner");
+      banner.classList.remove("won");
+
+      if (won) {
+        banner.classList.add("won");
+        // Pick a random congratulations message
+        const msg = WIN_MESSAGES[Math.floor(Math.random() * WIN_MESSAGES.length)];
+        document.getElementById("go-title").textContent = "🎉 You got it!";
+        document.getElementById("go-stats").innerHTML =
+          `<strong>${msg}</strong><br>Solved in ${numGuesses} / ${maxGuesses} guess${numGuesses === 1 ? '' : 'es'}`;
+        // Launch confetti
+        launchConfetti();
+      } else {
+        document.getElementById("go-title").textContent = "😞 Better luck next time";
+        document.getElementById("go-stats").textContent = `The answer was ${target.short_name}`;
+      }
+
+      document.getElementById("go-reveal").innerHTML = `
+        <img src="${target.player_face_url || ''}" alt="" onerror="this.style.display='none'"/>
+        <div class="reveal-info">
+          <div class="reveal-name">${target.short_name}</div>
+          <div class="reveal-meta">${target.club_name} · ${target.league_name}</div>
+          <div class="reveal-meta">${target.nationality_name} · ${target.primary_position} · OVR ${target.overall}</div>
+        </div>`;
+
+      banner.classList.add("visible");
+    }
+
+    // ── Confetti ───────────────────────────────────────────────────
+    function launchConfetti() {
+      const container = document.createElement("div");
+      container.className = "confetti-container";
+      document.body.appendChild(container);
+
+      const colors = ["#22c55e", "#eab308", "#3b82f6", "#ef4444", "#a855f7", "#ec4899", "#f97316"];
+      for (let i = 0; i < 80; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti-piece";
+        piece.style.left = Math.random() * 100 + "%";
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 1.2 + "s";
+        piece.style.animationDuration = (2 + Math.random() * 1.5) + "s";
+        piece.style.width = (6 + Math.random() * 8) + "px";
+        piece.style.height = (6 + Math.random() * 8) + "px";
+        piece.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+        container.appendChild(piece);
+      }
+      // Clean up after animation
+      setTimeout(() => container.remove(), 4000);
+    }
+
+    // ── Radar Chart ────────────────────────────────────────────────
+    function updateRadar(fb) {
+      const section = document.getElementById("radar-section");
+      section.classList.add("visible");
+
+      const labels = ["Pace", "Shooting", "Passing", "Dribbling", "Defending", "Physic"];
+      const guessData = labels.map(l => fb.guess_stats[l.toLowerCase()]);
+      const targetData = labels.map(l => fb.target_stats[l.toLowerCase()]);
+
+      if (radarChart) radarChart.destroy();
+
+      const ctx = document.getElementById("radar-chart").getContext("2d");
+      radarChart = new Chart(ctx, {
+        type: "radar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: fb.guess_name,
+              data: guessData,
+              borderColor: "rgba(59,130,246,0.9)",
+              backgroundColor: "rgba(59,130,246,0.15)",
+              pointBackgroundColor: "rgba(59,130,246,1)",
+              borderWidth: 2,
+            },
+            {
+              label: "Target",
+              data: targetData,
+              borderColor: "rgba(34,197,94,0.9)",
+              backgroundColor: "rgba(34,197,94,0.10)",
+              pointBackgroundColor: "rgba(34,197,94,1)",
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              min: 0, max: 99,
+              ticks: { stepSize: 20, color: "#888", backdropColor: "transparent" },
+              grid: { color: "#333" },
+              angleLines: { color: "#333" },
+              pointLabels: { color: "#ccc", font: { size: 12 } },
+            },
+          },
+          plugins: {
+            legend: {
+              labels: { color: "#ccc", font: { size: 12 } },
+            },
+          },
+        },
+      });
+    }
+
+    // ── Toast (simple) ─────────────────────────────────────────────
+    function showToast(msg) {
+      const el = document.createElement("div");
+      el.textContent = msg;
+      Object.assign(el.style, {
+        position: "fixed", top: "20px", left: "50%", transform: "translateX(-50%)",
+        background: "#333", color: "#eee", padding: "10px 24px", borderRadius: "8px",
+        fontSize: "0.85rem", zIndex: "9999", animation: "pop-in 0.25s ease-out",
+      });
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2500);
+    }
+
+    // ── Auto-start daily game on load ──────────────────────────────
+    startGame("daily");
+  </script>
+</body>
+</html>
