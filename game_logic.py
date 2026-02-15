@@ -111,10 +111,14 @@ def get_daily_player_id() -> int:
     """Deterministic 'player of the day' based on the current UTC date.
     
     Uses a hash so the sequence isn't trivially predictable.
+    Only selects players with overall rating > 85.
     """
+    # Filter for players with rating > 85
+    elite_players = PLAYERS_DF[PLAYERS_DF["overall"] >= 85]
+    
     seed = hashlib.sha256(f"footle-{date.today().isoformat()}".encode()).hexdigest()
-    index = int(seed, 16) % len(PLAYERS_DF)
-    return int(PLAYERS_DF.iloc[index]["player_id"])
+    index = int(seed, 16) % len(elite_players)
+    return int(elite_players.iloc[index]["player_id"])
 
 
 def get_random_player_id() -> int:
