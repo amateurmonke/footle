@@ -328,6 +328,190 @@
       text-align: center;
       margin-top: 2px;
     }
+
+    /* ── Mobile Responsive ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 1.6rem;
+        letter-spacing: 2px;
+      }
+      header p {
+        font-size: 0.75rem;
+      }
+
+      .mode-bar {
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .mode-bar button {
+        padding: 6px 16px;
+        font-size: 0.8rem;
+      }
+
+      .search-area {
+        max-width: 100%;
+        margin-top: 16px;
+      }
+      .search-area input {
+        padding: 12px 14px;
+        font-size: 0.95rem;
+      }
+
+      .guess-counter {
+        font-size: 0.8rem;
+        margin-top: 12px;
+      }
+
+      .history {
+        max-width: 100%;
+        padding: 0 8px;
+        overflow-x: auto;
+      }
+      .history-header, .history-row {
+        grid-template-columns: 30px 1fr 0.8fr 0.8fr 0.75fr 0.6fr 0.5fr 0.5fr;
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+      .history-header > div {
+        font-size: 0.6rem;
+        padding: 4px 4px;
+      }
+      .history-row > div {
+        padding: 8px 4px;
+        font-size: 0.7rem;
+        min-height: 38px;
+      }
+      .cell-player {
+        gap: 6px;
+      }
+      .cell-player img {
+        width: 24px;
+        height: 24px;
+      }
+      .direction-arrow {
+        font-size: 0.7rem;
+      }
+
+      .game-over-banner {
+        max-width: 100%;
+        padding: 20px 16px;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .game-over-banner h2 {
+        font-size: 1.1rem;
+      }
+      .target-reveal img {
+        width: 48px;
+        height: 48px;
+      }
+      .reveal-name {
+        font-size: 1rem !important;
+      }
+      .reveal-meta {
+        font-size: 0.7rem !important;
+      }
+      .game-over-banner .stats-line {
+        font-size: 0.8rem;
+      }
+      .play-again-btn {
+        padding: 8px 24px;
+        font-size: 0.9rem;
+      }
+
+      .radar-section {
+        max-width: 100%;
+        padding: 0 8px;
+      }
+      .radar-section h3 {
+        font-size: 0.8rem;
+      }
+
+      .autocomplete {
+        left: 8px;
+        right: 8px;
+        max-height: 240px;
+      }
+      .ac-item {
+        padding: 8px 12px;
+        gap: 10px;
+      }
+      .ac-item img {
+        width: 32px;
+        height: 32px;
+      }
+      .ac-item .ac-name {
+        font-size: 0.85rem;
+      }
+      .ac-item .ac-club {
+        font-size: 0.7rem;
+      }
+
+      footer {
+        padding: 20px 12px;
+        font-size: 0.7rem;
+      }
+    }
+
+    /* Small mobile devices */
+    @media (max-width: 480px) {
+      header {
+        padding: 20px 12px 10px;
+      }
+      header h1 {
+        font-size: 1.4rem;
+        letter-spacing: 1px;
+      }
+
+      .history {
+        padding: 0 4px;
+      }
+      .history-header, .history-row {
+        grid-template-columns: 25px 1fr 0.7fr 0.7fr 0.65fr 0.5fr 0.45fr 0.45fr;
+        gap: 3px;
+        margin-bottom: 3px;
+      }
+      .history-header > div {
+        font-size: 0.55rem;
+        padding: 3px 2px;
+        letter-spacing: 0;
+      }
+      .history-row > div {
+        padding: 6px 2px;
+        font-size: 0.65rem;
+        min-height: 34px;
+      }
+      .cell-player {
+        gap: 4px;
+      }
+      .cell-player img {
+        width: 20px;
+        height: 20px;
+      }
+      .cell-player span {
+        font-size: 0.65rem;
+      }
+
+      .game-over-banner {
+        padding: 16px 12px;
+      }
+      .game-over-banner h2 {
+        font-size: 1rem;
+      }
+      .target-reveal {
+        gap: 10px;
+      }
+      .target-reveal img {
+        width: 40px;
+        height: 40px;
+      }
+      .reveal-name {
+        font-size: 0.9rem !important;
+      }
+      .reveal-meta {
+        font-size: 0.65rem !important;
+      }
+    }
   </style>
 </head>
 <body>
